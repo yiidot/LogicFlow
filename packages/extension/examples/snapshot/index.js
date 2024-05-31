@@ -9,7 +9,7 @@ window.onload = function () {
       control: true,
     },
     background: {
-      color: '#F0F0F0'
+      color: '#F0F0F0',
     },
     grid: {
       type: 'dot',
@@ -20,12 +20,12 @@ window.onload = function () {
         text: '分享',
         className: 'lf-menu-item',
         callback(graphModel) {
-          alert('分享')
+          alert('分享');
         },
-      }
+      },
     ],
     // nodeTextDraggable: true,
-    edgeTextDraggable: true
+    edgeTextDraggable: true,
   });
   const lf1 = new LogicFlow({
     container: document.querySelector('#app1'),
@@ -44,12 +44,12 @@ window.onload = function () {
         text: '分享',
         className: 'lf-menu-item',
         callback(graphModel) {
-          alert('分享')
+          alert('分享');
         },
-      }
+      },
     ],
     // nodeTextDraggable: true,
-    edgeTextDraggable: true
+    edgeTextDraggable: true,
   });
   // 方便调试
   window.lf = lf;
@@ -61,7 +61,7 @@ window.onload = function () {
       lineHeight: 1.2,
       fontSize: 14,
     },
-  })
+  });
   class UserModel extends RectNodeModel {
   }
   class UserNode extends RectNode {
@@ -72,16 +72,17 @@ window.onload = function () {
       const height = 230;
       this.width = width;
       this.height = height;
-      const properties = this.properties;
+      const { properties } = this;
       this.anchorsOffset = [
         [width / 2, 0],
         [0, height / 2],
         [-width / 2, 0],
-        [0, -height/2],
-      ]
+        [0, -height / 2],
+      ];
     }
   }
   class UmlNode extends HtmlNode {
+    // <img src="http://cimup-data.test.jlyyz.net/res/comm/images/mimiz2pr.yoz.jpg" style="width: 100px;height: 100px;" />
     setHtml(rootEl) {
       const { properties } = this.props.model;
       const el = document.createElement('div');
@@ -89,7 +90,7 @@ window.onload = function () {
       const html = `
         <div>
           <div class="uml-head">Head</div>
-          <div class="uml-body demo2">
+          <div class="uml-body"  style="width: 100px;height: 100px;background: url(https://cdn.jsdelivr.net/gh/towersxu/cdn@master/material/funny/%E6%88%90%E7%86%9F.jpg);background-size: cover;">
             <div>+ ${properties.name}</div>
             <div>+ ${properties.body}</div>
           </div>
@@ -98,7 +99,7 @@ window.onload = function () {
             <div>+ setBody(Body $body)</div>
           </div>
         </div>
-      `
+      `;
       el.innerHTML = html;
       rootEl.innerHTML = '';
       rootEl.appendChild(el);
@@ -108,7 +109,7 @@ window.onload = function () {
     type: 'uml',
     view: UmlNode,
     model: UmlModel,
-  })
+  });
   lf.register({
     type: 'user',
     view: UserNode,
@@ -123,8 +124,8 @@ window.onload = function () {
         id: 100,
         properties: {
           name: 'haod',
-          body: '哈哈哈哈'
-        }
+          body: '哈哈哈哈',
+        },
       },
       {
         type: 'rect',
@@ -158,17 +159,17 @@ window.onload = function () {
           y: 300,
         },
         id: 12,
-      }
+      },
     ],
     edges: [
       {
         type: 'polyline',
         sourceNodeId: 10,
-        targetNodeId: 11
-      }
+        targetNodeId: 11,
+      },
     ],
   });
-  lf.extension.snapshot.useGlobalRules = false
+  lf.extension.snapshot.useGlobalRules = false;
   lf.extension.snapshot.customCssRules = `
     .lf-node-text-auto-wrap-content{
       line-height: 1.2;
@@ -180,12 +181,12 @@ window.onload = function () {
     .lf-canvas-overlay {
       background: red;
     }
-  `
+  `;
   lf1.register({
     type: 'uml',
     view: UmlNode,
     model: UmlModel,
-  })
+  });
   lf1.register({
     type: 'user',
     view: UserNode,
@@ -214,10 +215,10 @@ window.onload = function () {
           y: 300,
         },
         id: 12,
-      }
-    ]
+      },
+    ],
   });
-  lf1.extension.snapshot.useGlobalRules = false
+  lf1.extension.snapshot.useGlobalRules = false;
   lf1.extension.snapshot.customCssRules = `
     .lf-node-text-auto-wrap-content{
       line-height: 1.2;
@@ -229,36 +230,36 @@ window.onload = function () {
     .lf-canvas-overlay {
       background: red;
     }
-  `
-}
+  `;
+};
 document.getElementById('download').addEventListener('click', () => {
-  lf.getSnapshot()
-})
+  lf.getSnapshot();
+});
 document.getElementById('download1').addEventListener('click', () => {
-  lf1.getSnapshot()
-})
+  lf1.getSnapshot();
+});
 document.getElementById('preview').addEventListener('click', () => {
-  lf.getSnapshotBlob('#FFFFFF').then(({data, width, height})=> {
+  lf.getSnapshotBlob('#FFFFFF').then(({ data, width, height }) => {
     document.getElementById('img').src = img.src = window.URL.createObjectURL(data);
-    console.log(width, height)
-  })
-})
+    console.log(width, height);
+  });
+});
 document.getElementById('base64').addEventListener('click', () => {
-  lf.getSnapshotBase64().then(({data, width, height}) => {
+  lf.getSnapshotBase64().then(({ data, width, height }) => {
     document.getElementById('img').src = data;
-    console.log(width, height)
-  })
-})
+    console.log(width, height);
+  });
+});
 
-document.querySelector("#downloadXml").addEventListener("click", () => {
+document.querySelector('#downloadXml').addEventListener('click', () => {
   const data = lf.getGraphData();
   console.log(lfJson2Xml(data));
   download('logicflow.xml', lfJson2Xml(data));
-})
+});
 
 function download(filename, text) {
-  var element = document.createElement('a');
-  element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+  const element = document.createElement('a');
+  element.setAttribute('href', `data:text/plain;charset=utf-8,${encodeURIComponent(text)}`);
   element.setAttribute('download', filename);
 
   element.style.display = 'none';

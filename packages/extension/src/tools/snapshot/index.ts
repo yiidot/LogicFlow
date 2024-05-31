@@ -1,5 +1,106 @@
 /* eslint-disable operator-linebreak */
 /* eslint-disable implicit-arrow-linebreak */
+
+/**
+ * 图片缓存, 已请求过的图片直接从缓存中获取
+ */
+const imageCache: Record<string, string> = {};
+
+/**
+ * 将网络图片转为 base64
+ * @param url - 图片地址
+ * @returns
+ */
+async function convertImageToBase64(url: string): Promise<string> {
+  if (imageCache[url]) {
+    return imageCache[url];
+  }
+  return fetch(url)
+    .then((response) => response.blob())
+    .then(
+      (blob) =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        }),
+    );
+}
+
+/**
+ * 使用 base64 的图片替换 image 标签的 href
+ * @param node - html 节点
+ */
+async function updateImageHrefWithBase64Image(node: HTMLImageElement) {
+  try {
+    const url = node.getAttribute('src') || '';
+    if (url.startsWith('data:image/png;base64')) {
+      return;
+    }
+    const base64Image = await convertImageToBase64(url);
+    node.setAttribute('src', base64Image);
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+/**
+ * 使用 base64 的图片替换背景图片
+ * @param node - html 节点
+ * @param styleAttr - 样式属性名称
+ */
+async function updateBackgroundImageWithBase64Image(
+  node: HTMLElement,
+  url: string,
+) {
+  try {
+    if (url.startsWith('data:')) {
+      return;
+    }
+    const base64Image = await convertImageToBase64(url);
+    node.style.backgroundImage = `url(${base64Image})`;
+  } catch (error) {
+    console.error(error);
+  }
+}
+
+/**
+ * 更新
+ * @param node - 节点
+ */
+async function updateImageSource(node: HTMLElement | SVGElement) {
+  const nodes = [node];
+  let nodePtr;
+  const promises: any[] = [];
+  while (nodes.length) {
+    nodePtr = nodes.shift();
+    if (nodePtr.children.length) {
+      nodes.push(...nodePtr.children);
+    }
+    if (nodePtr instanceof HTMLElement) {
+      // 如果有 style 的 background, backgroundImage 属性中有 url(xxx), 尝试替换为 base64 图片
+      const { background, backgroundImage } = nodePtr.style;
+      const backgroundUrlMatch = background.match(/url\(["']?(.*?)["']?\)/);
+      if (backgroundUrlMatch && backgroundUrlMatch[1]) {
+        const imageUrl = backgroundUrlMatch[1];
+        promises.push(updateBackgroundImageWithBase64Image(nodePtr, imageUrl));
+      }
+      const backgroundImageUrlMatch = backgroundImage.match(
+        /url\(["']?(.*?)["']?\)/,
+      );
+      if (backgroundImageUrlMatch && backgroundImageUrlMatch[1]) {
+        const imageUrl = backgroundImageUrlMatch[1];
+        promises.push(updateBackgroundImageWithBase64Image(nodePtr, imageUrl));
+      }
+    }
+    if (nodePtr instanceof HTMLImageElement) {
+      promises.push(updateImageHrefWithBase64Image(nodePtr));
+    }
+  }
+  await Promise.all(promises);
+}
+
 /**
  * 快照插件，生成视图
  */
@@ -71,9 +172,10 @@ class Snapshot {
     }
   }
   /* 下载图片 */
-  getSnapshot(fileName: string, backgroundColor: string) {
+  async getSnapshot(fileName: string, backgroundColor: string) {
     this.fileName = fileName || `logic-flow.${Date.now()}.png`;
     const svg = this.getSvgRootElement(this.lf);
+    await updateImageSource(svg);
     this.getCanvasData(svg, backgroundColor).then(
       (canvas: HTMLCanvasElement) => {
         const imgURI = canvas
@@ -84,7 +186,7 @@ class Snapshot {
     );
   }
   /* 获取base64对象 */
-  getSnapshotBase64(backgroundColor: string) {
+  async getSnapshotBase64(backgroundColor: string) {
     const svg = this.getSvgRootElement(this.lf);
     return new Promise((resolve) => {
       this.getCanvasData(svg, backgroundColor).then(
@@ -97,7 +199,7 @@ class Snapshot {
     });
   }
   /* 获取Blob对象 */
-  getSnapshotBlob(backgroundColor: string) {
+  async getSnapshotBlob(backgroundColor: string) {
     const svg = this.getSvgRootElement(this.lf);
     return new Promise((resolve) => {
       this.getCanvasData(svg, backgroundColor).then(
@@ -176,7 +278,8 @@ class Snapshot {
     */
     const base = this.lf.graphModel.rootEl.querySelector('.lf-base');
     const bbox = (base as Element).getBoundingClientRect();
-    const layout = this.lf.container.querySelector('.lf-canvas-overlay')
+    const layout = this.lf.container
+      .querySelector('.lf-canvas-overlay')
       .getBoundingClientRect();
     const offsetX = bbox.x - layout.x;
     const offsetY = bbox.y - layout.y;
